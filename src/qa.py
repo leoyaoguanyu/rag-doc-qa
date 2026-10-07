@@ -2,6 +2,7 @@
 prompt template, and generate an answer with a local HuggingFace LLM."""
 
 import argparse
+import os
 from pathlib import Path
 
 from langchain_huggingface import HuggingFacePipeline
@@ -10,7 +11,7 @@ from transformers import pipeline as hf_pipeline
 from .prompts import RAG_PROMPT
 from .vectorstore import load_vectorstore
 
-GEN_MODEL = "HuggingFaceTB/SmolLM2-360M-Instruct"
+GEN_MODEL = os.environ.get("GEN_MODEL", "HuggingFaceTB/SmolLM2-360M-Instruct")
 
 
 def get_generator(model_name: str = GEN_MODEL, max_new_tokens: int = 160) -> HuggingFacePipeline:
