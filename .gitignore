@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+vectorstore/
+.ipynb_checkpoints/

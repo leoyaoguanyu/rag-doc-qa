@@ -1,0 +1,16 @@
+# Vector Databases
+
+A vector database stores embedding vectors and supports fast approximate
+nearest-neighbor search over them. Embeddings are dense numerical
+representations of text produced by models such as sentence-transformers;
+texts with similar meaning end up close together in vector space.
+
+FAISS is an open-source vector search library developed by Meta. It is
+widely used for local, in-process similarity search and powers many RAG
+prototypes. Commercial managed alternatives include Weaviate and Pinecone,
+which add features like filtering, hybrid search, and hosted infrastructure.
+
+At query time, the user's question is embedded with the same model used for
+the documents, and the database returns the top-k most similar chunks ranked
+by cosine similarity. Choosing the chunk size and the value of k trades off
+recall against the amount of context stuffed into the LLM prompt.

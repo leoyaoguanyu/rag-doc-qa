@@ -1,0 +1,15 @@
+# Prompt Engineering for RAG
+
+Prompt engineering is the practice of designing the instructions given to a
+language model to get reliable outputs. For RAG, the prompt template usually
+has three parts: a system instruction that tells the model to answer only from
+the provided context, the retrieved context passages, and the user's question.
+
+A common guardrail sentence is: "If the answer is not in the context, say you
+don't know." This reduces hallucination when retrieval comes back empty or
+irrelevant. Other techniques include few-shot prompting, where the template
+shows one or two example question-answer pairs, and chain-of-thought
+prompting, which asks the model to reason step by step before answering.
+
+Good RAG prompts are explicit about output format too, for example asking for
+a short answer plus the source document name, so results stay verifiable.

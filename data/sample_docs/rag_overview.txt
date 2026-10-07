@@ -1,0 +1,17 @@
+# What is RAG?
+
+RAG stands for Retrieval-Augmented Generation. It is a technique that combines
+an information retrieval step with a large language model (LLM) to answer
+questions over private or domain-specific documents.
+
+A RAG system has two main components: a retriever and a generator. The retriever
+searches a document collection for passages relevant to the user's question,
+typically by comparing embedding vectors with cosine similarity. The generator,
+usually an LLM, then produces an answer conditioned on both the question and
+the retrieved passages.
+
+The main reason teams adopt RAG is hallucination reduction. A standalone LLM
+may invent plausible-sounding but false facts when asked about documents it has
+never seen. By grounding generation in retrieved context, RAG keeps answers
+tied to real sources. RAG also lets teams update knowledge by re-indexing
+documents, without retraining the model.
