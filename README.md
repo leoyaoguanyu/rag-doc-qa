@@ -1,5 +1,9 @@
 # RAG Document Q&A
 
+[![CI](https://github.com/leoyaoguanyu/rag-doc-qa/actions/workflows/ci.yml/badge.svg)](https://github.com/leoyaoguanyu/rag-doc-qa/actions)
+[![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A retrieval-augmented generation (RAG) pipeline that answers questions over
 your own documents. Built as a portfolio project for AI Engineer roles:
 everything runs locally, no paid API key needed.
