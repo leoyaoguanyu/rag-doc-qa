@@ -10,9 +10,21 @@ everything runs locally, no paid API key needed.
 
 ## How it works
 
-```
-PDF/TXT docs → chunk (LangChain splitter) → embed (sentence-transformers)
-→ FAISS vector index → top-k retrieval → prompt template → local LLM answer
+```mermaid
+flowchart LR
+    subgraph IndexTime["Index time — python -m src.build_index"]
+        D[".txt docs"] --> I["src/ingest.py<br/>load + chunk<br/>(LangChain splitter)"]
+        I --> E["src/vectorstore.py<br/>embed<br/>(sentence-transformers)"]
+        E --> F["FAISS index<br/>(persisted on disk)"]
+    end
+    subgraph QueryTime["Query time — python -m src.qa"]
+        Q["question"] --> R["src/qa.py<br/>top-k similarity search"]
+        F --> R
+        R --> C["retrieved chunks<br/>(context)"]
+        C --> P["src/prompts.py<br/>RAG_PROMPT<br/>(grounding instruction + guardrail)"]
+        P --> G["src/qa.py<br/>local LLM<br/>(SmolLM2-360M, HF)"]
+        G --> A["answer"]
+    end
 ```
 
 - **Retrieval**: `sentence-transformers/all-MiniLM-L6-v2` embeddings + FAISS
