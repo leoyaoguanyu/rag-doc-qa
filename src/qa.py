@@ -15,6 +15,18 @@ GEN_MODEL = os.environ.get("GEN_MODEL", "HuggingFaceTB/SmolLM2-360M-Instruct")
 
 
 def get_generator(model_name: str = GEN_MODEL, max_new_tokens: int = 160) -> HuggingFacePipeline:
+    """Build a local text-generation pipeline wrapped for LangChain.
+
+    Uses greedy decoding (``do_sample=False``) so answers are deterministic.
+
+    Args:
+        model_name: HF model id or local path; defaults to the
+            ``GEN_MODEL`` env override, else SmolLM2-360M-Instruct.
+        max_new_tokens: Cap on generated tokens per answer.
+
+    Returns:
+        A ``HuggingFacePipeline`` usable as the ``generator`` in ``answer``.
+    """
     gen = hf_pipeline(
         "text-generation",
         model=model_name,
@@ -37,6 +49,10 @@ def answer(question: str, store, generator=None, k: int = 3) -> dict:
 
 
 def main() -> None:
+    """CLI: ask one question over the persisted index.
+
+    With ``--no-generate`` only the retrieved context is printed (no LLM call).
+    """
     ap = argparse.ArgumentParser(description="Ask a question over your documents.")
     ap.add_argument("question", nargs="?", help="Question to answer")
     ap.add_argument("--vectorstore", type=Path, default=Path("vectorstore"))

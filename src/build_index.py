@@ -8,6 +8,7 @@ from .vectorstore import build_vectorstore
 
 
 def main() -> None:
+    """CLI: load docs -> chunk -> embed -> persist the FAISS index to disk."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", type=Path, default=Path("data/sample_docs"))
     ap.add_argument("--out", type=Path, default=Path("vectorstore"))

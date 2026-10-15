@@ -13,6 +13,21 @@ from .vectorstore import load_vectorstore
 
 
 def evaluate(store, pairs: list[dict], k: int = 3) -> pd.DataFrame:
+    """Score retrieval with hit-rate@k over question/expected-source pairs.
+
+    A pair counts as a "hit" when at least one of the top-k retrieved
+    chunks comes from the expected source document.
+
+    Args:
+        store: FAISS vector store supporting ``similarity_search``.
+        pairs: Question pairs, each with ``question`` and ``expected_source`` keys.
+        k: Number of chunks retrieved per question.
+
+    Returns:
+        DataFrame with one row per pair: ``question`` (truncated to 60
+        chars), ``expected``, ``retrieved`` (comma-joined sources), and
+        ``hit`` (bool).
+    """
     rows = []
     for pair in pairs:
         docs = store.similarity_search(pair["question"], k=k)
@@ -27,6 +42,7 @@ def evaluate(store, pairs: list[dict], k: int = 3) -> pd.DataFrame:
 
 
 def main() -> None:
+    """CLI: run retrieval evaluation and print the summary table plus hit-rate@k."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--vectorstore", type=Path, default=Path("vectorstore"))
     ap.add_argument("--eval", type=Path, default=Path("data/eval.json"))

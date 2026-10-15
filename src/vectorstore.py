@@ -15,6 +15,15 @@ EMBEDDING_MODEL = os.environ.get(
 
 
 def get_embeddings(model_name: str = EMBEDDING_MODEL) -> HuggingFaceEmbeddings:
+    """Build HuggingFace sentence embeddings for indexing and retrieval.
+
+    Args:
+        model_name: HF model id or local path; defaults to the
+            ``EMBEDDING_MODEL`` env override, else all-MiniLM-L6-v2.
+
+    Returns:
+        A ``HuggingFaceEmbeddings`` instance ready for FAISS.
+    """
     return HuggingFaceEmbeddings(model_name=model_name)
 
 
