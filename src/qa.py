@@ -3,6 +3,7 @@ prompt template, and generate an answer with a local HuggingFace LLM."""
 
 import argparse
 import os
+import sys
 from pathlib import Path
 
 from langchain_huggingface import HuggingFacePipeline
@@ -62,6 +63,13 @@ def main() -> None:
     args = ap.parse_args()
 
     question = args.question or input("Question: ")
+    if not args.vectorstore.exists():
+        print(
+            f"Error: no vectorstore found at '{args.vectorstore}'. "
+            "Run `python -m src.build_index` first to index your documents.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     store = load_vectorstore(args.vectorstore)
     generator = None if args.no_generate else get_generator()
     result = answer(question, store, generator, k=args.k)
