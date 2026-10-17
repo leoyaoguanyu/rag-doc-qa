@@ -1,6 +1,7 @@
 """Build the FAISS index: load docs -> chunk -> embed -> persist."""
 
 import argparse
+import sys
 from pathlib import Path
 
 from .ingest import chunk_documents, load_documents
@@ -16,7 +17,21 @@ def main() -> None:
     ap.add_argument("--chunk-overlap", type=int, default=50)
     args = ap.parse_args()
 
+    if not args.data.is_dir():
+        print(
+            f"Error: data directory '{args.data}' does not exist. "
+            "Point --data at a folder containing .txt documents.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     docs = load_documents(args.data)
+    if not docs:
+        print(
+            f"Error: no .txt documents found in '{args.data}'. "
+            "Add at least one .txt file before building the index.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     chunks = chunk_documents(docs, args.chunk_size, args.chunk_overlap)
     print(f"Loaded {len(docs)} documents -> {len(chunks)} chunks")
     build_vectorstore(chunks, args.out)
