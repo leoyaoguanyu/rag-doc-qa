@@ -62,6 +62,14 @@ def main() -> None:
                     help="Retrieval only: print context without calling the LLM")
     args = ap.parse_args()
 
+    if args.k < 1:
+        print(
+            f"Error: --k must be at least 1 (got {args.k}): "
+            "choose how many chunks to retrieve per question.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     question = args.question or input("Question: ")
     if not args.vectorstore.exists():
         print(
