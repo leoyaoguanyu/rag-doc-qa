@@ -5,6 +5,7 @@ expected source document. Reported with a pandas summary table."""
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -48,6 +49,14 @@ def main() -> None:
     ap.add_argument("--eval", type=Path, default=Path("data/eval.json"))
     ap.add_argument("--k", type=int, default=3)
     args = ap.parse_args()
+
+    if args.k < 1:
+        print(
+            f"Error: --k must be at least 1 (got {args.k}): "
+            "choose how many chunks to retrieve per question.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     pairs = json.loads(args.eval.read_text(encoding="utf-8"))
     df = evaluate(load_vectorstore(args.vectorstore), pairs, k=args.k)
