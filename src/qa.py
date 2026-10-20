@@ -6,6 +6,7 @@ import os
 import sys
 from pathlib import Path
 
+from langchain_community.vectorstores import FAISS
 from langchain_huggingface import HuggingFacePipeline
 from transformers import pipeline as hf_pipeline
 
@@ -37,8 +38,27 @@ def get_generator(model_name: str = GEN_MODEL, max_new_tokens: int = 160) -> Hug
     return HuggingFacePipeline(pipeline=gen)
 
 
-def answer(question: str, store, generator=None, k: int = 3) -> dict:
-    """Run one RAG turn. With generator=None, returns retrieved context only."""
+def answer(
+    question: str,
+    store: FAISS,
+    generator: HuggingFacePipeline | None = None,
+    k: int = 3,
+) -> dict[str, object]:
+    """Run one RAG turn: retrieve top-k chunks, stuff the prompt, generate.
+
+    Args:
+        question: The user's question.
+        store: FAISS vector store built by ``build_vectorstore``.
+        generator: Text-generation pipeline (see :func:`get_generator`).
+            With ``None``, skips generation and returns retrieved context
+            only (useful for retrieval-only mode and tests).
+        k: Number of chunks retrieved per question.
+
+    Returns:
+        Dict with ``answer`` (generated text, or ``None`` when
+        ``generator`` is ``None``), ``context`` (the retrieved chunks
+        joined as one string), and ``sources`` (source document names).
+    """
     docs = store.similarity_search(question, k=k)
     context = "\n\n".join(d.page_content for d in docs)
     sources = [d.metadata.get("source") for d in docs]

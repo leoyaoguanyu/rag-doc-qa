@@ -9,11 +9,12 @@ import sys
 from pathlib import Path
 
 import pandas as pd
+from langchain_community.vectorstores import FAISS
 
 from .vectorstore import load_vectorstore
 
 
-def evaluate(store, pairs: list[dict], k: int = 3) -> pd.DataFrame:
+def evaluate(store: FAISS, pairs: list[dict[str, str]], k: int = 3) -> pd.DataFrame:
     """Score retrieval with hit-rate@k over question/expected-source pairs.
 
     A pair counts as a "hit" when at least one of the top-k retrieved
