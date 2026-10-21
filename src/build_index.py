@@ -17,6 +17,28 @@ def main() -> None:
     ap.add_argument("--chunk-overlap", type=int, default=50)
     args = ap.parse_args()
 
+    if args.chunk_size < 1:
+        print(
+            f"Error: --chunk-size must be at least 1 (got {args.chunk_size}).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if args.chunk_overlap < 0:
+        print(
+            f"Error: --chunk-overlap cannot be negative "
+            f"(got {args.chunk_overlap}).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if args.chunk_overlap >= args.chunk_size:
+        print(
+            f"Error: --chunk-overlap ({args.chunk_overlap}) must be smaller "
+            f"than --chunk-size ({args.chunk_size}), otherwise the splitter "
+            "would loop forever re-emitting the same chunk.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     if not args.data.is_dir():
         print(
             f"Error: data directory '{args.data}' does not exist. "
