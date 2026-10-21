@@ -1,7 +1,7 @@
 # Pinned for reproducible builds (matches the tested dev environment, Python 3.12).
 # Dependabot (see .github/dependabot.yml) keeps these up to date.
 faiss-cpu==1.15.1
-langchain==1.4.3
+langchain==1.4.6
 langchain-community==0.4.2
 langchain-huggingface==1.2.2
 langchain-text-splitters==1.1.3
