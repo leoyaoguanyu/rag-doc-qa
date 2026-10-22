@@ -90,7 +90,11 @@ def main() -> None:
         )
         sys.exit(1)
 
-    question = args.question or input("Question: ")
+    try:
+        question = args.question or input("Question: ")
+    except (EOFError, KeyboardInterrupt):
+        print("\nNo question asked, exiting.", file=sys.stderr)
+        sys.exit(0)
     if not args.vectorstore.exists():
         print(
             f"Error: no vectorstore found at '{args.vectorstore}'. "

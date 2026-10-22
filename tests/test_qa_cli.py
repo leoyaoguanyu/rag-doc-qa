@@ -89,3 +89,41 @@ def test_valid_k_passes_k_guard(tmp_path, monkeypatch):
 
     with pytest.raises(AssertionError, match="guard should have passed"):
         main()
+
+
+def test_interactive_eof_exits_0_without_traceback(monkeypatch, capsys):
+    """Ctrl+D at the prompt: exit(0) with a short note, no traceback."""
+    import src.qa as qa_module
+
+    monkeypatch.setattr(sys, "argv", ["qa", "--no-generate"])
+
+    def _eof(_prompt=""):
+        raise EOFError
+
+    monkeypatch.setattr("builtins.input", _eof)
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 0
+    err = capsys.readouterr().err
+    assert "No question asked" in err
+    assert "Traceback" not in err
+
+
+def test_interactive_keyboard_interrupt_exits_0_without_traceback(monkeypatch, capsys):
+    """Ctrl+C at the prompt: exit(0) with a short note, no traceback."""
+    monkeypatch.setattr(sys, "argv", ["qa", "--no-generate"])
+
+    def _interrupt(_prompt=""):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr("builtins.input", _interrupt)
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 0
+    err = capsys.readouterr().err
+    assert "No question asked" in err
+    assert "Traceback" not in err

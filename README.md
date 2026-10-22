@@ -76,7 +76,7 @@ src/
   qa.py            # retrieve → stuff prompt → generate (CLI included)
   evaluate.py      # hit-rate@k over data/eval.json
   build_index.py   # one-shot: ingest → chunk → index → persist
-tests/             # 26 pytest tests (FAISS round-trip uses fake embeddings: no downloads)
+tests/             # 28 pytest tests (FAISS round-trip uses fake embeddings: no downloads)
 notebooks/
   rag_demo.ipynb   # end-to-end walkthrough
 data/
