@@ -95,6 +95,13 @@ def main() -> None:
     except (EOFError, KeyboardInterrupt):
         print("\nNo question asked, exiting.", file=sys.stderr)
         sys.exit(0)
+    if not question.strip():
+        print(
+            "Error: question is empty. Ask a non-empty question, e.g. "
+            "`python -m src.qa 'what is RAG?'`.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     if not args.vectorstore.exists():
         print(
             f"Error: no vectorstore found at '{args.vectorstore}'. "

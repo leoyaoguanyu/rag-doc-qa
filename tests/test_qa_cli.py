@@ -1,7 +1,8 @@
 """CLI behavior: a missing vectorstore directory fails with a clear message,
-and an invalid --k is rejected before anything else runs.
+an invalid --k is rejected before anything else runs, and an empty
+question is rejected before the index is loaded.
 
-No model downloads involved: both guards run before anything is loaded.
+No model downloads involved: all guards run before anything is loaded.
 """
 
 import sys
@@ -109,6 +110,48 @@ def test_interactive_eof_exits_0_without_traceback(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "No question asked" in err
     assert "Traceback" not in err
+
+
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_blank_question_exits_1_with_hint(monkeypatch, capsys, blank):
+    """Empty / whitespace-only question: exit(1) before the index is loaded."""
+    monkeypatch.setattr(sys, "argv", ["qa", "--no-generate"])
+
+    def _blank(_prompt=""):
+        return blank
+
+    monkeypatch.setattr("builtins.input", _blank)
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "question is empty" in err
+    assert "Traceback" not in err
+
+
+def test_nonblank_question_passes_empty_guard(tmp_path, monkeypatch):
+    """A real question must not trip the empty-question guard.
+
+    Stop right after the guard by monkeypatching load_vectorstore, so no
+    model download is attempted.
+    """
+    import src.qa as qa_module
+
+    store_dir = tmp_path / "vectorstore"
+    store_dir.mkdir()
+    monkeypatch.setattr(sys, "argv", ["qa", "--no-generate",
+                                      "--vectorstore", str(store_dir),
+                                      "what is rag?"])
+
+    def _boom(_path):
+        raise AssertionError("guard should have passed and load attempted")
+
+    monkeypatch.setattr(qa_module, "load_vectorstore", _boom)
+
+    with pytest.raises(AssertionError, match="guard should have passed"):
+        main()
 
 
 def test_interactive_keyboard_interrupt_exits_0_without_traceback(monkeypatch, capsys):
