@@ -46,7 +46,62 @@ def test_valid_k_passes_k_guard(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     monkeypatch.setattr(sys, "argv", ["evaluate", "--k", "1",
-                                      "--eval", str(eval_file)])
+                                      "--eval", str(eval_file),
+                                      "--vectorstore", str(tmp_path)])
+
+    class FakeStore:
+        def similarity_search(self, question, k):
+            raise AssertionError("guard should have passed and store attempted")
+
+    monkeypatch.setattr(eval_module, "load_vectorstore",
+                        lambda _path: FakeStore())
+
+    with pytest.raises(AssertionError, match="guard should have passed"):
+        main()
+
+
+def test_missing_vectorstore_dir_exits_1_with_hint(tmp_path, monkeypatch, capsys):
+    """--vectorstore pointing nowhere: exit(1) with a build_index hint.
+
+    Mirrors the guard in src.qa.main: the missing index must fail with a
+    friendly error instead of a FAISS traceback.
+    """
+    eval_file = tmp_path / "eval.json"
+    eval_file.write_text(
+        json_module.dumps([{"question": "q", "expected_source": "s"}]),
+        encoding="utf-8",
+    )
+    missing = tmp_path / "nope_vectorstore"
+    monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(eval_file),
+                                      "--vectorstore", str(missing)])
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "vectorstore" in err
+    assert "build_index" in err
+    assert "Traceback" not in err
+
+
+def test_existing_vectorstore_dir_passes_guard(tmp_path, monkeypatch):
+    """An existing --vectorstore dir must not trip the guard.
+
+    Stop right after the guard by monkeypatching load_vectorstore, so no
+    model download is attempted.
+    """
+    import src.evaluate as eval_module
+
+    eval_file = tmp_path / "eval.json"
+    eval_file.write_text(
+        json_module.dumps([{"question": "q", "expected_source": "s"}]),
+        encoding="utf-8",
+    )
+    store_dir = tmp_path / "vectorstore"
+    store_dir.mkdir()
+    monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(eval_file),
+                                      "--vectorstore", str(store_dir)])
 
     class FakeStore:
         def similarity_search(self, question, k):
@@ -153,7 +208,8 @@ def test_valid_eval_file_passes_guard(tmp_path, monkeypatch):
         json_module.dumps([{"question": "q", "expected_source": "s"}]),
         encoding="utf-8",
     )
-    monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(eval_file)])
+    monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(eval_file),
+                                      "--vectorstore", str(tmp_path)])
 
     class FakeStore:
         def similarity_search(self, question, k):

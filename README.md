@@ -42,7 +42,7 @@ flowchart LR
 |---|---|
 | Documents → chunks | 3 → 9 |
 | Retrieval hit-rate@3 | **1.00 (8/8)** |
-| Unit tests | 37 passed (pytest, incl. retriever edge cases + CLI guards) |
+| Unit tests | 39 passed (pytest, incl. retriever edge cases + CLI guards) |
 | CI | GitHub Actions: tests + index build + eval smoke test |
 
 ## Quickstart

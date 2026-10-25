@@ -107,6 +107,13 @@ def main() -> None:
         sys.exit(1)
 
     pairs = _load_eval_pairs(args.eval)
+    if not args.vectorstore.exists():
+        print(
+            f"Error: no vectorstore found at '{args.vectorstore}'. "
+            "Run `python -m src.build_index` first to index your documents.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     df = evaluate(load_vectorstore(args.vectorstore), pairs, k=args.k)
     print(df.to_string(index=False))
     print(f"\nhit-rate@{args.k}: {df['hit'].mean():.2f} ({int(df['hit'].sum())}/{len(df)})")
