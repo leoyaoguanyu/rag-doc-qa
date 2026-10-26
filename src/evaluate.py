@@ -87,6 +87,20 @@ def _load_eval_pairs(eval_path: Path) -> list[dict[str, str]]:
                 file=sys.stderr,
             )
             sys.exit(1)
+        if (
+            not isinstance(pair["question"], str)
+            or not pair["question"].strip()
+            or not isinstance(pair["expected_source"], str)
+            or not pair["expected_source"].strip()
+        ):
+            print(
+                f"Error: eval pair #{i} in '{eval_path}' is malformed: "
+                "\"question\" and \"expected_source\" must be non-empty "
+                "strings (a blank question would be scored against an "
+                "empty retrieval).",
+                file=sys.stderr,
+            )
+            sys.exit(1)
     return pairs
 
 

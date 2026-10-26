@@ -42,7 +42,7 @@ flowchart LR
 |---|---|
 | Documents → chunks | 3 → 9 |
 | Retrieval hit-rate@3 | **1.00 (8/8)** |
-| Unit tests | 39 passed (pytest, incl. retriever edge cases + CLI guards) |
+| Unit tests | 43 passed (pytest, incl. retriever edge cases + CLI guards) |
 | CI | GitHub Actions: tests + index build + eval smoke test |
 
 ## Quickstart
@@ -76,7 +76,7 @@ src/
   qa.py            # retrieve → stuff prompt → generate (CLI included)
   evaluate.py      # hit-rate@k over data/eval.json
   build_index.py   # one-shot: ingest → chunk → index → persist
-tests/             # 37 pytest tests (FAISS round-trip uses fake embeddings: no downloads)
+tests/             # 43 pytest tests (FAISS round-trip uses fake embeddings: no downloads)
 notebooks/
   rag_demo.ipynb   # end-to-end walkthrough
 data/

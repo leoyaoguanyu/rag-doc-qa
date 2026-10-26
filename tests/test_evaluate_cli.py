@@ -195,6 +195,34 @@ def test_malformed_pair_exits_1_naming_pair_index(tmp_path, monkeypatch, capsys)
     assert "Traceback" not in err
 
 
+@pytest.mark.parametrize("bad_pair", [
+    {"question": "", "expected_source": "s"},
+    {"question": "   ", "expected_source": "s"},
+    {"question": "q", "expected_source": ""},
+    {"question": 123, "expected_source": "s"},
+])
+def test_blank_or_non_string_pair_exits_1_naming_pair_index(
+    tmp_path, monkeypatch, capsys, bad_pair
+):
+    """A pair with a blank/non-string question or source: exit(1), no traceback.
+
+    The old check only verified the keys exist, so a blank question
+    slipped through and was scored against an empty retrieval.
+    """
+    bad = tmp_path / "blank.json"
+    bad.write_text(json_module.dumps([bad_pair]), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(bad)])
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "pair #0" in err
+    assert "non-empty" in err
+    assert "Traceback" not in err
+
+
 def test_valid_eval_file_passes_guard(tmp_path, monkeypatch):
     """A well-formed eval file must not trip the guard: execution proceeds past it.
 
