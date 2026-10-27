@@ -55,6 +55,14 @@ def main() -> None:
         )
         sys.exit(1)
     chunks = chunk_documents(docs, args.chunk_size, args.chunk_overlap)
+    if not chunks:
+        print(
+            f"Error: no usable text found in '{args.data}'. "
+            "All .txt files there are blank or whitespace-only, so there "
+            "is nothing to index: add at least one .txt file with real text.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     print(f"Loaded {len(docs)} documents -> {len(chunks)} chunks")
     build_vectorstore(chunks, args.out)
     print(f"FAISS index saved to {args.out}")

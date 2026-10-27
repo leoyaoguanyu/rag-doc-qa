@@ -55,6 +55,53 @@ def test_data_dir_without_txt_docs_exits_1_with_hint(
     assert str(empty) in err
 
 
+def test_blank_txt_docs_exit_1_with_hint(tmp_path, monkeypatch, capsys):
+    """Only blank/whitespace .txt files: exit(1) instead of a FAISS error.
+
+    The files exist, so the earlier 'no .txt documents' guard passes, but
+    chunking them yields zero chunks and FAISS cannot index an empty list.
+    """
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "blank.txt").write_text("", encoding="utf-8")
+    (data / "spaces.txt").write_text("   \n\n  ", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", _argv(str(data), str(tmp_path / "out")))
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "no usable text" in err
+    assert str(data) in err
+
+
+def test_blank_docs_mixed_with_valid_do_not_fire(
+    tmp_path, monkeypatch, capsys
+):
+    """One blank file next to a real doc still reaches indexing.
+
+    Monkeypatch build_vectorstore so no model download is attempted.
+    """
+    import src.build_index as build_index_module
+
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "blank.txt").write_text("", encoding="utf-8")
+    (data / "real.txt").write_text("some content", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", _argv(str(data), str(tmp_path / "out")))
+
+    called = {}
+
+    def _fake_build(chunks, out):
+        called["chunks"] = len(chunks)
+
+    monkeypatch.setattr(build_index_module, "build_vectorstore", _fake_build)
+    main()
+    assert called["chunks"] == 1
+    assert capsys.readouterr().err == ""
+
+
 def test_chunk_overlap_not_smaller_than_size_exits_1(
     tmp_path, monkeypatch, capsys
 ):
