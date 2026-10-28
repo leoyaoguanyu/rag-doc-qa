@@ -1,6 +1,6 @@
-"""CLI behavior: a missing vectorstore directory fails with a clear message,
-an invalid --k is rejected before anything else runs, and an empty
-question is rejected before the index is loaded.
+"""CLI behavior: a missing or incomplete vectorstore fails with a clear
+message, an invalid --k is rejected before anything else runs, and an
+empty question is rejected before the index is loaded.
 
 No model downloads involved: all guards run before anything is loaded.
 """
@@ -44,6 +44,8 @@ def test_existing_vectorstore_dir_does_not_hit_guard(tmp_path, monkeypatch):
 
     store_dir = tmp_path / "vectorstore"
     store_dir.mkdir()
+    (store_dir / "index.faiss").touch()
+    (store_dir / "index.pkl").touch()
     monkeypatch.setattr(sys, "argv", _argv(str(store_dir)))
 
     def _boom(_path):
@@ -53,6 +55,40 @@ def test_existing_vectorstore_dir_does_not_hit_guard(tmp_path, monkeypatch):
 
     with pytest.raises(AssertionError, match="guard should have passed"):
         main()
+
+
+def test_vectorstore_path_is_file_exits_1_with_hint(tmp_path, monkeypatch, capsys):
+    """A file (not a directory) at --vectorstore: exit(1), no FAISS traceback."""
+    store_file = tmp_path / "vectorstore"
+    store_file.touch()
+    monkeypatch.setattr(sys, "argv", _argv(str(store_file)))
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "not a directory" in err
+    assert "build_index" in err
+
+
+@pytest.mark.parametrize("present", [[], ["index.faiss"]])
+def test_incomplete_vectorstore_dir_exits_1_with_hint(tmp_path, monkeypatch, capsys, present):
+    """Empty dir / dir missing index.pkl: exit(1) naming the missing file(s)."""
+    store_dir = tmp_path / "vectorstore"
+    store_dir.mkdir()
+    for name in present:
+        (store_dir / name).touch()
+    monkeypatch.setattr(sys, "argv", _argv(str(store_dir)))
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "incomplete" in err
+    assert "build_index" in err
+    assert "Traceback" not in err
 
 
 @pytest.mark.parametrize("bad_k", [0, -3])
@@ -79,6 +115,8 @@ def test_valid_k_passes_k_guard(tmp_path, monkeypatch):
 
     store_dir = tmp_path / "vectorstore"
     store_dir.mkdir()
+    (store_dir / "index.faiss").touch()
+    (store_dir / "index.pkl").touch()
     monkeypatch.setattr(sys, "argv", ["qa", "--no-generate", "--k", "1",
                                       "--vectorstore", str(store_dir),
                                       "what is rag?"])
@@ -141,6 +179,8 @@ def test_nonblank_question_passes_empty_guard(tmp_path, monkeypatch):
 
     store_dir = tmp_path / "vectorstore"
     store_dir.mkdir()
+    (store_dir / "index.faiss").touch()
+    (store_dir / "index.pkl").touch()
     monkeypatch.setattr(sys, "argv", ["qa", "--no-generate",
                                       "--vectorstore", str(store_dir),
                                       "what is rag?"])

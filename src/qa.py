@@ -109,6 +109,27 @@ def main() -> None:
             file=sys.stderr,
         )
         sys.exit(1)
+    if not args.vectorstore.is_dir():
+        print(
+            f"Error: vectorstore path '{args.vectorstore}' is not a directory. "
+            "Point --vectorstore at the folder created by "
+            "`python -m src.build_index`.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    missing_files = [
+        name
+        for name in ("index.faiss", "index.pkl")
+        if not (args.vectorstore / name).is_file()
+    ]
+    if missing_files:
+        print(
+            f"Error: vectorstore at '{args.vectorstore}' is incomplete "
+            f"(missing {', '.join(missing_files)}). "
+            "Re-run `python -m src.build_index` to rebuild the index.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     store = load_vectorstore(args.vectorstore)
     generator = None if args.no_generate else get_generator()
     result = answer(question, store, generator, k=args.k)
