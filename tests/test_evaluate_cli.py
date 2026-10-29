@@ -48,6 +48,10 @@ def test_valid_k_passes_k_guard(tmp_path, monkeypatch):
     monkeypatch.setattr(sys, "argv", ["evaluate", "--k", "1",
                                       "--eval", str(eval_file),
                                       "--vectorstore", str(tmp_path)])
+    # The incomplete-vectorstore guard runs before load_vectorstore, so a
+    # complete-looking dir is needed for the guard to pass through.
+    (tmp_path / "index.faiss").touch()
+    (tmp_path / "index.pkl").touch()
 
     class FakeStore:
         def similarity_search(self, question, k):
@@ -100,6 +104,8 @@ def test_existing_vectorstore_dir_passes_guard(tmp_path, monkeypatch):
     )
     store_dir = tmp_path / "vectorstore"
     store_dir.mkdir()
+    (store_dir / "index.faiss").touch()
+    (store_dir / "index.pkl").touch()
     monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(eval_file),
                                       "--vectorstore", str(store_dir)])
 
@@ -112,6 +118,41 @@ def test_existing_vectorstore_dir_passes_guard(tmp_path, monkeypatch):
 
     with pytest.raises(AssertionError, match="guard should have passed"):
         main()
+
+
+@pytest.mark.parametrize("setup", ["file", "empty_dir", "missing_pkl"])
+def test_incomplete_vectorstore_exits_1_with_hint(tmp_path, monkeypatch, capsys, setup):
+    """--vectorstore as a file / empty dir / dir missing index.pkl: exit(1).
+
+    Mirrors the qa CLI guard: an incomplete vectorstore must fail with a
+    friendly rebuild hint instead of a FAISS traceback.
+    """
+    eval_file = tmp_path / "eval.json"
+    eval_file.write_text(
+        json_module.dumps([{"question": "q", "expected_source": "s"}]),
+        encoding="utf-8",
+    )
+    store = tmp_path / "vectorstore"
+    if setup == "file":
+        store.touch()
+    elif setup == "empty_dir":
+        store.mkdir()
+    else:
+        store.mkdir()
+        (store / "index.faiss").touch()
+    monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(eval_file),
+                                      "--vectorstore", str(store)])
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "vectorstore" in err
+    assert "build_index" in err
+    assert "Traceback" not in err
+    if setup == "missing_pkl":
+        assert "index.pkl" in err
 
 
 def test_missing_eval_file_exits_1_with_hint(tmp_path, monkeypatch, capsys):
@@ -238,6 +279,10 @@ def test_valid_eval_file_passes_guard(tmp_path, monkeypatch):
     )
     monkeypatch.setattr(sys, "argv", ["evaluate", "--eval", str(eval_file),
                                       "--vectorstore", str(tmp_path)])
+    # The incomplete-vectorstore guard runs before load_vectorstore, so a
+    # complete-looking dir is needed for the guard to pass through.
+    (tmp_path / "index.faiss").touch()
+    (tmp_path / "index.pkl").touch()
 
     class FakeStore:
         def similarity_search(self, question, k):
