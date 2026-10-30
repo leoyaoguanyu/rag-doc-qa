@@ -9,7 +9,7 @@ import sys
 
 import pytest
 
-from src.qa import main
+from src.qa import answer, main
 
 
 def _argv(vectorstore: str) -> list:
@@ -210,3 +210,53 @@ def test_interactive_keyboard_interrupt_exits_0_without_traceback(monkeypatch, c
     err = capsys.readouterr().err
     assert "No question asked" in err
     assert "Traceback" not in err
+
+
+class _EmptyStore:
+    """A store that retrieves nothing, whatever the question."""
+
+    def similarity_search(self, _question, k=3):
+        return []
+
+
+class _RecordingGenerator:
+    """Stand-in generator that records whether it was invoked."""
+
+    def __init__(self):
+        self.calls = 0
+
+    def invoke(self, _prompt):
+        self.calls += 1
+        return "should never be generated"
+
+
+def test_answer_skips_generator_on_empty_retrieval():
+    """Zero chunks: no LLM call, empty context/sources, answer None.
+
+    Generating from an empty context would only invite hallucination.
+    """
+    generator = _RecordingGenerator()
+    result = answer("unrelated question", _EmptyStore(), generator, k=3)
+
+    assert result == {"answer": None, "context": "", "sources": []}
+    assert generator.calls == 0
+
+
+def test_main_empty_retrieval_exits_1_with_hint(tmp_path, monkeypatch, capsys):
+    """CLI with an index that retrieves nothing: exit(1), no empty answer."""
+    import src.qa as qa_module
+
+    store_dir = tmp_path / "vectorstore"
+    store_dir.mkdir()
+    (store_dir / "index.faiss").touch()
+    (store_dir / "index.pkl").touch()
+    monkeypatch.setattr(sys, "argv", _argv(str(store_dir)))
+    monkeypatch.setattr(qa_module, "load_vectorstore", lambda _path: _EmptyStore())
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "no chunks retrieved" in err
+    assert "build_index" in err

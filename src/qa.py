@@ -58,8 +58,13 @@ def answer(
         Dict with ``answer`` (generated text, or ``None`` when
         ``generator`` is ``None``), ``context`` (the retrieved chunks
         joined as one string), and ``sources`` (source document names).
+        With zero retrieved chunks, generation is skipped and ``answer``
+        is ``None``: answering from an empty context would only invite
+        hallucination, so the caller reports it instead.
     """
     docs = store.similarity_search(question, k=k)
+    if not docs:
+        return {"answer": None, "context": "", "sources": []}
     context = "\n\n".join(d.page_content for d in docs)
     sources = [d.metadata.get("source") for d in docs]
     if generator is None:
@@ -133,6 +138,15 @@ def main() -> None:
     store = load_vectorstore(args.vectorstore)
     generator = None if args.no_generate else get_generator()
     result = answer(question, store, generator, k=args.k)
+    if not result["sources"]:
+        print(
+            "Error: no chunks retrieved for this question: the index "
+            "returned nothing to answer from. Check that your documents "
+            "cover the topic, or re-run `python -m src.build_index` "
+            "to rebuild the index.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     print(f"Sources: {result['sources']}")
     if result["answer"] is None:
         print("\n--- retrieved context ---\n" + result["context"])
