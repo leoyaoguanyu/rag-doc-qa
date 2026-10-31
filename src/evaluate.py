@@ -33,7 +33,9 @@ def evaluate(store: FAISS, pairs: list[dict[str, str]], k: int = 3) -> pd.DataFr
     rows = []
     for pair in pairs:
         docs = store.similarity_search(pair["question"], k=k)
-        sources = [d.metadata.get("source") for d in docs]
+        # Chunks without source metadata (e.g. hand-built indexes) must not
+        # crash the ", ".join below with a TypeError: label them "unknown".
+        sources = [d.metadata.get("source") or "unknown" for d in docs]
         rows.append({
             "question": pair["question"][:60],
             "expected": pair["expected_source"],
