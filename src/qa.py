@@ -66,7 +66,9 @@ def answer(
     if not docs:
         return {"answer": None, "context": "", "sources": []}
     context = "\n\n".join(d.page_content for d in docs)
-    sources = [d.metadata.get("source") for d in docs]
+    # Chunks without source metadata (e.g. hand-built indexes) are
+    # reported as "unknown" instead of None, mirroring evaluate().
+    sources = [d.metadata.get("source") or "unknown" for d in docs]
     if generator is None:
         return {"answer": None, "context": context, "sources": sources}
     prompt = RAG_PROMPT.format(context=context, question=question)
