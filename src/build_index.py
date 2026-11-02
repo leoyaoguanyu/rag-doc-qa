@@ -39,6 +39,15 @@ def main() -> None:
         )
         sys.exit(1)
 
+    if args.out.exists() and not args.out.is_dir():
+        print(
+            f"Error: --out path '{args.out}' is a file, not a directory. "
+            "Point --out at a folder for the FAISS index (it will be "
+            "created if it does not exist yet).",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     if not args.data.is_dir():
         print(
             f"Error: data directory '{args.data}' does not exist. "

@@ -102,6 +102,55 @@ def test_blank_docs_mixed_with_valid_do_not_fire(
     assert capsys.readouterr().err == ""
 
 
+def test_out_path_is_file_exits_1_with_hint(tmp_path, monkeypatch, capsys):
+    """--out pointing at an existing file: exit(1) before any embedding.
+
+    Without the guard, indexing would run first and FAISS would fail
+    cryptically when saving into a path that is a file, not a folder.
+    """
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "doc.txt").write_text("some content", encoding="utf-8")
+    out_file = tmp_path / "out"
+    out_file.write_text("not a directory", encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", _argv(str(data), str(out_file)))
+
+    with pytest.raises(SystemExit) as exc:
+        main()
+
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "--out" in err
+    assert str(out_file) in err
+
+
+def test_out_path_existing_dir_does_not_fire(
+    tmp_path, monkeypatch, capsys
+):
+    """--out pointing at an existing directory still reaches indexing.
+
+    Monkeypatch build_vectorstore so no model download is attempted.
+    """
+    import src.build_index as build_index_module
+
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "doc.txt").write_text("some content", encoding="utf-8")
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    monkeypatch.setattr(sys, "argv", _argv(str(data), str(out_dir)))
+
+    called = {}
+
+    def _fake_build(chunks, out):
+        called["out"] = str(out)
+
+    monkeypatch.setattr(build_index_module, "build_vectorstore", _fake_build)
+    main()
+    assert called["out"] == str(out_dir)
+    assert capsys.readouterr().err == ""
+
+
 def test_chunk_overlap_not_smaller_than_size_exits_1(
     tmp_path, monkeypatch, capsys
 ):
