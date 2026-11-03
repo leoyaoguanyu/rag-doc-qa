@@ -57,7 +57,9 @@ def answer(
     Returns:
         Dict with ``answer`` (generated text, or ``None`` when
         ``generator`` is ``None``), ``context`` (the retrieved chunks
-        joined as one string), and ``sources`` (source document names).
+        joined as one string), and ``sources`` (source document names,
+        deduplicated in first-seen order: several top-k chunks usually
+        come from the same document, and the CLI should list it once).
         With zero retrieved chunks, generation is skipped and ``answer``
         is ``None``: answering from an empty context would only invite
         hallucination, so the caller reports it instead.
@@ -68,7 +70,11 @@ def answer(
     context = "\n\n".join(d.page_content for d in docs)
     # Chunks without source metadata (e.g. hand-built indexes) are
     # reported as "unknown" instead of None, mirroring evaluate().
-    sources = [d.metadata.get("source") or "unknown" for d in docs]
+    # Deduplicate in first-seen order: top-k chunks from one document
+    # used to print "Sources: ['a.txt', 'a.txt', 'b.txt']".
+    sources = list(dict.fromkeys(
+        d.metadata.get("source") or "unknown" for d in docs
+    ))
     if generator is None:
         return {"answer": None, "context": context, "sources": sources}
     prompt = RAG_PROMPT.format(context=context, question=question)

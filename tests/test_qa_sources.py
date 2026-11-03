@@ -42,3 +42,29 @@ def test_sourceless_chunk_does_not_hide_a_real_source():
     result = answer("q", store, generator=None)
 
     assert result["sources"] == ["a.txt", "unknown"]
+
+
+def test_repeated_source_listed_once_in_first_seen_order():
+    """Several chunks from one doc: list that source once, order kept."""
+    store = _StubStore([
+        Document(page_content="RAG part 1.", metadata={"source": "a.txt"}),
+        Document(page_content="RAG part 2.", metadata={"source": "a.txt"}),
+        Document(page_content="FAISS text.", metadata={"source": "b.txt"}),
+        Document(page_content="RAG part 3.", metadata={"source": "a.txt"}),
+    ])
+    result = answer("q", store, generator=None, k=4)
+
+    assert result["sources"] == ["a.txt", "b.txt"]
+    # Context still keeps every chunk: only the source list is deduped.
+    assert "RAG part 3." in result["context"]
+
+
+def test_repeated_unknown_source_listed_once():
+    """Two sourceless chunks collapse to a single "unknown"."""
+    store = _StubStore([
+        Document(page_content="Text one.", metadata={}),
+        Document(page_content="Text two.", metadata={}),
+    ])
+    result = answer("q", store, generator=None)
+
+    assert result["sources"] == ["unknown"]
