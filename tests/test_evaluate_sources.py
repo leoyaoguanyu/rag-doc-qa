@@ -34,6 +34,31 @@ def test_chunk_without_source_metadata_reports_unknown_not_crash():
     assert df.iloc[0]["hit"] == False  # pandas stores bools as numpy bool_
 
 
+def test_repeated_source_listed_once_in_first_seen_order():
+    """Several chunks from one doc: list that source once, order kept."""
+    store = _StubStore([
+        Document(page_content="RAG part 1.", metadata={"source": "a.txt"}),
+        Document(page_content="RAG part 2.", metadata={"source": "a.txt"}),
+        Document(page_content="FAISS text.", metadata={"source": "b.txt"}),
+        Document(page_content="RAG part 3.", metadata={"source": "a.txt"}),
+    ])
+    df = evaluate(store, [{"question": "q", "expected_source": "a.txt"}], k=4)
+
+    assert df.iloc[0]["retrieved"] == "a.txt, b.txt"
+    assert df.iloc[0]["hit"] == True  # pandas stores bools as numpy bool_
+
+
+def test_repeated_unknown_source_listed_once():
+    """Two sourceless chunks collapse to a single "unknown"."""
+    store = _StubStore([
+        Document(page_content="Text one.", metadata={}),
+        Document(page_content="Text two.", metadata={}),
+    ])
+    df = evaluate(store, [{"question": "q", "expected_source": "a.txt"}])
+
+    assert df.iloc[0]["retrieved"] == "unknown"
+
+
 def test_sourceless_chunk_does_not_block_a_real_hit():
     """Mixed hits: a real source still counts even beside an unknown one."""
     store = _StubStore([

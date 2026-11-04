@@ -27,15 +27,20 @@ def evaluate(store: FAISS, pairs: list[dict[str, str]], k: int = 3) -> pd.DataFr
 
     Returns:
         DataFrame with one row per pair: ``question`` (truncated to 60
-        chars), ``expected``, ``retrieved`` (comma-joined sources), and
-        ``hit`` (bool).
+        chars), ``expected``, ``retrieved`` (comma-joined sources,
+        deduplicated in first-seen order), and ``hit`` (bool).
     """
     rows = []
     for pair in pairs:
         docs = store.similarity_search(pair["question"], k=k)
         # Chunks without source metadata (e.g. hand-built indexes) must not
         # crash the ", ".join below with a TypeError: label them "unknown".
-        sources = [d.metadata.get("source") or "unknown" for d in docs]
+        # Deduplicate in first-seen order, mirroring qa.answer(): several
+        # top-k chunks usually come from one document, and the report
+        # should list it once, not "a.txt, a.txt, b.txt".
+        sources = list(dict.fromkeys(
+            d.metadata.get("source") or "unknown" for d in docs
+        ))
         rows.append({
             "question": pair["question"][:60],
             "expected": pair["expected_source"],
