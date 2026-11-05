@@ -29,7 +29,16 @@ def evaluate(store: FAISS, pairs: list[dict[str, str]], k: int = 3) -> pd.DataFr
         DataFrame with one row per pair: ``question`` (truncated to 60
         chars), ``expected``, ``retrieved`` (comma-joined sources,
         deduplicated in first-seen order), and ``hit`` (bool).
+
+    Raises:
+        ValueError: If ``k`` is below 1 or ``pairs`` is empty: the CLI
+            guards catch these first, but direct callers of ``evaluate``
+            get the same fail-fast check here.
     """
+    if k < 1:
+        raise ValueError(f"k must be at least 1 (got {k}).")
+    if not pairs:
+        raise ValueError("pairs must be a non-empty list of eval pairs.")
     rows = []
     for pair in pairs:
         docs = store.similarity_search(pair["question"], k=k)

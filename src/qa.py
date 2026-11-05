@@ -63,7 +63,16 @@ def answer(
         With zero retrieved chunks, generation is skipped and ``answer``
         is ``None``: answering from an empty context would only invite
         hallucination, so the caller reports it instead.
+
+    Raises:
+        ValueError: If ``question`` is empty/blank or ``k`` is below 1:
+            the CLI guards catch these first, but direct callers of
+            ``answer`` get the same fail-fast check here.
     """
+    if not question or not question.strip():
+        raise ValueError("question must be a non-empty string.")
+    if k < 1:
+        raise ValueError(f"k must be at least 1 (got {k}).")
     docs = store.similarity_search(question, k=k)
     if not docs:
         return {"answer": None, "context": "", "sources": []}
