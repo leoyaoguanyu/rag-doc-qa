@@ -1,6 +1,32 @@
+import pytest
 from langchain_core.documents import Document
 
 from src.ingest import chunk_documents, load_documents
+
+
+@pytest.mark.parametrize("chunk_size", [0, -5])
+def test_chunk_documents_rejects_bad_chunk_size(chunk_size):
+    docs = [Document(page_content="hello world. " * 20)]
+    with pytest.raises(ValueError, match="chunk_size must be at least 1"):
+        chunk_documents(docs, chunk_size=chunk_size, chunk_overlap=10)
+
+
+def test_chunk_documents_rejects_negative_overlap():
+    docs = [Document(page_content="hello world. " * 20)]
+    with pytest.raises(ValueError, match="chunk_overlap cannot be negative"):
+        chunk_documents(docs, chunk_size=100, chunk_overlap=-1)
+
+
+def test_chunk_documents_rejects_overlap_not_smaller_than_size():
+    docs = [Document(page_content="hello world. " * 20)]
+    with pytest.raises(ValueError, match="must be smaller than chunk_size"):
+        chunk_documents(docs, chunk_size=100, chunk_overlap=100)
+
+
+def test_chunk_documents_accepts_valid_params():
+    docs = [Document(page_content="hello world. " * 200)]
+    chunks = chunk_documents(docs, chunk_size=100, chunk_overlap=10)
+    assert len(chunks) > 1
 
 
 def test_chunking_splits_long_text(tmp_path):
