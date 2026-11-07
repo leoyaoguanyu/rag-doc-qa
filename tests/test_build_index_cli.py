@@ -151,16 +151,25 @@ def test_out_path_existing_dir_does_not_fire(
     assert capsys.readouterr().err == ""
 
 
-def test_chunk_overlap_not_smaller_than_size_exits_1(
-    tmp_path, monkeypatch, capsys
+@pytest.mark.parametrize("chunk_size,chunk_overlap,flags", [
+    # overlap >= size would loop the splitter forever
+    (400, 500, ["--chunk-overlap", "--chunk-size"]),
+    # size 0 is meaningless
+    (0, None, ["--chunk-size"]),
+    # negative overlap is meaningless
+    (None, -10, ["--chunk-overlap"]),
+])
+def test_invalid_chunk_params_exit_1(
+    tmp_path, monkeypatch, capsys, chunk_size, chunk_overlap, flags
 ):
-    """--chunk-overlap >= --chunk-size: exit(1) instead of a stuck splitter."""
+    """Invalid --chunk-size/--chunk-overlap: exit(1) with a hint, not a
+    cryptic splitter error or a stuck splitter."""
     data = tmp_path / "data"
     data.mkdir()
     (data / "doc.txt").write_text("some content", encoding="utf-8")
     monkeypatch.setattr(
         sys, "argv", _argv(str(data), str(tmp_path / "out"),
-                           chunk_size=400, chunk_overlap=500)
+                           chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     )
 
     with pytest.raises(SystemExit) as exc:
@@ -168,40 +177,8 @@ def test_chunk_overlap_not_smaller_than_size_exits_1(
 
     assert exc.value.code == 1
     err = capsys.readouterr().err
-    assert "--chunk-overlap" in err
-    assert "--chunk-size" in err
-
-
-def test_chunk_size_zero_exits_1(tmp_path, monkeypatch, capsys):
-    """--chunk-size 0: exit(1) with a hint, not a cryptic splitter error."""
-    data = tmp_path / "data"
-    data.mkdir()
-    (data / "doc.txt").write_text("some content", encoding="utf-8")
-    monkeypatch.setattr(
-        sys, "argv", _argv(str(data), str(tmp_path / "out"), chunk_size=0)
-    )
-
-    with pytest.raises(SystemExit) as exc:
-        main()
-
-    assert exc.value.code == 1
-    assert "--chunk-size" in capsys.readouterr().err
-
-
-def test_negative_chunk_overlap_exits_1(tmp_path, monkeypatch, capsys):
-    """--chunk-overlap -10: exit(1) with a hint instead of deep failure."""
-    data = tmp_path / "data"
-    data.mkdir()
-    (data / "doc.txt").write_text("some content", encoding="utf-8")
-    monkeypatch.setattr(
-        sys, "argv", _argv(str(data), str(tmp_path / "out"), chunk_overlap=-10)
-    )
-
-    with pytest.raises(SystemExit) as exc:
-        main()
-
-    assert exc.value.code == 1
-    assert "--chunk-overlap" in capsys.readouterr().err
+    for flag in flags:
+        assert flag in err
 
 
 def test_chunk_guards_do_not_fire_on_valid_values(

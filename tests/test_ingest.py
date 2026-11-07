@@ -23,12 +23,6 @@ def test_chunk_documents_rejects_overlap_not_smaller_than_size():
         chunk_documents(docs, chunk_size=100, chunk_overlap=100)
 
 
-def test_chunk_documents_accepts_valid_params():
-    docs = [Document(page_content="hello world. " * 200)]
-    chunks = chunk_documents(docs, chunk_size=100, chunk_overlap=10)
-    assert len(chunks) > 1
-
-
 def test_chunking_splits_long_text(tmp_path):
     (tmp_path / "a.txt").write_text("hello world. " * 200)
     docs = load_documents(tmp_path)

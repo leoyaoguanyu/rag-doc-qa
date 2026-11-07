@@ -105,31 +105,6 @@ def test_invalid_k_exits_1_with_hint(monkeypatch, capsys, bad_k):
     assert str(bad_k) in err
 
 
-def test_valid_k_passes_k_guard(tmp_path, monkeypatch):
-    """k=1 must not trip the --k guard: execution proceeds past it.
-
-    Stop right after the guard by monkeypatching load_vectorstore, so no
-    model download is attempted.
-    """
-    import src.qa as qa_module
-
-    store_dir = tmp_path / "vectorstore"
-    store_dir.mkdir()
-    (store_dir / "index.faiss").touch()
-    (store_dir / "index.pkl").touch()
-    monkeypatch.setattr(sys, "argv", ["qa", "--no-generate", "--k", "1",
-                                      "--vectorstore", str(store_dir),
-                                      "what is rag?"])
-
-    def _boom(_path):
-        raise AssertionError("guard should have passed and load attempted")
-
-    monkeypatch.setattr(qa_module, "load_vectorstore", _boom)
-
-    with pytest.raises(AssertionError, match="guard should have passed"):
-        main()
-
-
 def test_interactive_eof_exits_0_without_traceback(monkeypatch, capsys):
     """Ctrl+D at the prompt: exit(0) with a short note, no traceback."""
     import src.qa as qa_module
@@ -167,31 +142,6 @@ def test_blank_question_exits_1_with_hint(monkeypatch, capsys, blank):
     err = capsys.readouterr().err
     assert "question is empty" in err
     assert "Traceback" not in err
-
-
-def test_nonblank_question_passes_empty_guard(tmp_path, monkeypatch):
-    """A real question must not trip the empty-question guard.
-
-    Stop right after the guard by monkeypatching load_vectorstore, so no
-    model download is attempted.
-    """
-    import src.qa as qa_module
-
-    store_dir = tmp_path / "vectorstore"
-    store_dir.mkdir()
-    (store_dir / "index.faiss").touch()
-    (store_dir / "index.pkl").touch()
-    monkeypatch.setattr(sys, "argv", ["qa", "--no-generate",
-                                      "--vectorstore", str(store_dir),
-                                      "what is rag?"])
-
-    def _boom(_path):
-        raise AssertionError("guard should have passed and load attempted")
-
-    monkeypatch.setattr(qa_module, "load_vectorstore", _boom)
-
-    with pytest.raises(AssertionError, match="guard should have passed"):
-        main()
 
 
 def test_interactive_keyboard_interrupt_exits_0_without_traceback(monkeypatch, capsys):

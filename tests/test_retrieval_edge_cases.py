@@ -1,4 +1,7 @@
-"""Boundary tests for retrieval: oversized top-k and an empty result set.
+"""Boundary tests for retrieval: oversized top-k.
+
+(Empty retrieval is covered in test_qa_cli.py, which also asserts the
+generator is never called on zero chunks.)
 
 Uses a stub store so no model downloads are needed.
 """
@@ -31,14 +34,6 @@ def test_top_k_larger_than_doc_count_returns_all_docs():
     docs = store.similarity_search("What is RAG?", k=99)
     assert len(docs) == 2
     assert [d.metadata["source"] for d in docs] == ["a.txt", "b.txt"]
-
-
-def test_answer_handles_empty_retrieval():
-    """No hits: context is empty, sources empty, and nothing crashes."""
-    result = answer("unknown topic", _StubStore([]), generator=None, k=3)
-    assert result["answer"] is None
-    assert result["context"] == ""
-    assert result["sources"] == []
 
 
 def test_answer_clamps_top_k_through_pipeline():
